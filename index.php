@@ -1,8 +1,7 @@
 <?php
     $method = "GET";
-    $url = "https://api.csdi.gov.hk/apim/dataquery/api/?";
-    $data_array = array("id" => "edb_rcd_1629267205213_58940", "layer" => "asfps", "limit" => "10", "offset" => "0");
-    $data = json_encode($data_array);
+    $url = "https://api.csdi.gov.hk/apim/dataquery/api/";
+    $data = array("id" => "edb_rcd_1629267205213_58940", "layer" => "asfps", "limit" => "4", "offset" => "0");
 
     function callAPI($method, $url, $data){
         $curl = curl_init();
@@ -23,24 +22,34 @@
                 }
         }
     
-        // Optional Authentication:
-        // curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
-        // curl_setopt($curl, CURLOPT_USERPWD, "username:password");
-    
         curl_setopt($curl, CURLOPT_URL, $url);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, true);   // Verify the SSL certificate
+        curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 2);      // Verify the host
         curl_setopt($curl, CURLOPT_HTTPHEADER, array('Content-Type: application/json', 'Accept: application/json'));
     
-        $result = curl_exec($curl);
+        $response = curl_exec($curl);
+    
+        // Check for errors
+        if ($response === false) {
+            echo 'Curl error: ' . curl_error($curl);
+        } else {
+            // Decode the JSON response
+            $data = json_decode($response, true);
+            // print_r($data); // Output the data
+        }
     
         curl_close($curl);
-    
-        return $result;
+
+        return $data;
     }
     $result = callAPI($method, $url, $data);
-    $response = json_decode($result, true);
-    // echo $errors = $response['response']['errors'];
-    // echo $data = $response['response']['data'][0];
+
+    if(is_array($result) && count($result) != 0) {
+        $timeStamp = $result['timeStamp'];
+        $numberReturned = $result['numberReturned'];
+        $features[] = $result['features'];
+    }
 ?>
 
 <!DOCTYPE html>
@@ -125,37 +134,52 @@
         </div>
 
         <?php
-            $numberOfCards = 4;
-            for ($n = 1; $n <= $numberOfCards; $n++) {
-                echo '<div class="cards-group" id="card_'.$n.'">
-                    <div class="card position-relative">
-                        <img src="../images/SVG/shortlist.svg" class="shortlist position-absolute top-0 end-0" alt="Shortlist">
-                        <div class="card-body">
-                            <p class="card-title subtitle">Facility Name</p>
-                            <div class="dashed-line"></div>
-                            <div class="card-content d-flex justify-content-left">
-                                <div class="school-group d-flex">
-                                    <img src="../images/PNG/address_image.png" alt="address" style="width: 66px; height: 66%; margin-right: 12px;">
-                                    <p class="address-text caption1 d-flex align-items-center justify-content-center">Address Text Here</p>
-                                </div>
-                                <div class="last-update-group d-flex align-items-center justify-content-center">
-                                    <img src="../images/SVG/done.svg" alt="" style="width: 24px; height: 24px;">
-                                    <div class="d-flex align-content-stretch flex-wrap">
-                                        <p class="last-update-title caption2">Last Updated Date</p>
-                                        <p class="last-update-date label2">2023-07-24</p>
-                                    </div>
-                                </div>
-                                <div class="cat-container d-flex align-items-center justify-content-center">
-                                    <div class="cat-group d-flex align-items-center justify-content-center">
-                                        <canvas class="myCanvas"></canvas>
-                                        <p class="cat label2">Higher Education Institutions</p>
+            $numberOfCards = count($features);
+            for ($n = 0; $n < $numberOfCards; $n++) {
+                $feature =  $features[$n];
+                foreach ($feature as $key => $featureArray) {
+                    $geometry[] = $featureArray['geometry'];
+                    $type[] = $featureArray['type'];
+                    $properties[] = $featureArray['properties'];
+                }
+                
+                foreach($properties as $value => $item) {
+                    // Original date in yyyy-mm-dd format
+                    $odate = $item['Last_Updated_Date___最後更新日期'];
+
+                    // Converting the original date to a new format (yyyy-mm-dd)
+                    $newDate = date("Y-m-d", strtotime($odate));
+
+                        echo '<div class="cards-group" id="card_'.$value.'">
+                            <div class="card position-relative">
+                                <img src="../images/SVG/shortlist.svg" class="shortlist position-absolute top-0 end-0" alt="Shortlist">
+                                <div class="card-body">
+                                    <p class="card-title subtitle">'.$item['Facility_Name'].'</p>
+                                    <div class="dashed-line"></div>
+                                    <div class="card-content d-flex justify-content-left">
+                                        <div class="school-group d-flex">
+                                            <img src="../images/PNG/address_image.png" alt="address" style="width: 66px; height: 66%; margin-right: 12px;">
+                                            <p class="address-text caption1 d-flex align-items-center justify-content-center">'.$item['Address'].'</p>
+                                        </div>
+                                        <div class="last-update-group d-flex align-items-center justify-content-center">
+                                            <img src="../images/SVG/done.svg" alt="" style="width: 24px; height: 24px;">
+                                            <div class="d-flex align-content-stretch flex-wrap">
+                                                <p class="last-update-title caption2">Last Updated Date</p>
+                                                <p class="last-update-date label2">'.$newDate.'</p>
+                                            </div>
+                                        </div>
+                                        <div class="cat-container d-flex align-items-center justify-content-center">
+                                            <div class="cat-group d-flex align-items-center justify-content-center">
+                                                <canvas class="myCanvas"></canvas>
+                                                <p class="cat label2">Higher Education Institutions</p>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                </div>';
-            }
+                        </div>';
+                    }
+                }
         ?>
         
         <div class="add-btn-container d-flex align-items-center justify-content-center position-absolute bottom-0 start-50 translate-middle-x">
