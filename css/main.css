@@ -513,16 +513,24 @@ form.d-flex {
     z-index: 2;
     background: rgba(255, 255, 255, 0.4);
     backdrop-filter: blur(24px);
-    border: 1px solid transparent;
     border-radius: 32px;
-    border-image: linear-gradient(110.43deg, #FEF3C7 26.89%, #F59E0B 79.56%); 
-    border-image-slice: 1;
-    border-image-width: 1px;
+    position: relative;
 
     animation-delay: 1000ms !important;
     animation: searchEaseOutAnimation 1s ease-out;
     animation-duration: 1500ms;
 }
+
+.search-panel::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 32px;
+    border: 1px solid transparent;
+    background: linear-gradient(110.43deg, #FEF3C7 26.89%, #F59E0B 79.56%) border-box;
+    mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+  }
 
 .input-group {
     position: relative;
